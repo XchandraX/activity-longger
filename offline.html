@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Activity Logger - Offline</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background: #f1f5f9;
+            color: #334155;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            text-align: center;
+            padding: 20px;
+        }
+        .container {
+            max-width: 400px;
+            background: white;
+            padding: 40px;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #dc2626;
+            margin-bottom: 20px;
+        }
+        p {
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+        .icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="icon">📶</div>
+        <h1>Anda Sedang Offline</h1>
+        <p>Aplikasi Activity Logger memerlukan koneksi internet untuk sinkronisasi data. Silakan periksa koneksi internet Anda dan coba lagi.</p>
+        <p>Fitur yang tersedia saat offline:</p>
+        <ul style="text-align: left; margin-bottom: 30px;">
+            <li>Melihat data yang sudah di-cache</li>
+            <li>Menambah kegiatan baru (akan disinkron nanti)</li>
+            <li>Melakukan perubahan pada data lokal</li>
+        </ul>
+        <button onclick="window.location.reload()" 
+                style="background: #3b82f6; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-size: 16px;">
+            Coba Lagi
+        </button>
+    </div>
+</body>
+</html>

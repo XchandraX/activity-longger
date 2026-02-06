@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- Tambahkan meta tags untuk PWA di index.html -->
+  <link rel="apple-touch-icon" href="images/icon-192.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Activity Logger">
+
+  <!-- Untuk Android -->
+  <meta name="mobile-web-app-capable" content="yes">
+
+  <!-- Untuk theme color consistency -->
+  <meta name="theme-color" content="#3b82f6" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0f172a" media="(prefers-color-scheme: dark)">
+
+  <title>Activity Logger Chx</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" type="image/png" href="images/icon-192.png" />
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: "class",
+    };
+  </script>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+
+  <style>
+    body {
+      overflow-x: hidden;
+    }
+
+    .list-subtugas,
+    .sub-projects-container {
+      max-height: 1000px;
+      transition: all 0.5s ease-in-out;
+      overflow: hidden;
+    }
+
+    .list-subtugas.collapsed,
+    .sub-projects-container.collapsed {
+      max-height: 0;
+      margin: 0 !important;
+      padding: 0 !important;
+    }
+
+    #login-overlay,
+    #custom-alert-overlay {
+      backdrop-filter: blur(5px);
+    }
+
+    .custom-alert {
+      transform: scale(0.95);
+      opacity: 0;
+      transition: all 0.2s ease-out;
+    }
+
+    .custom-alert.visible {
+      transform: scale(1);
+      opacity: 1;
+    }
+
+    /* Style untuk elemen bayangan saat di-drag */
+    .drag-ghost {
+      background-color: #dbeafe;
+      /* Ini adalah bg-blue-100 */
+    }
+
+    .dark .drag-ghost {
+      background-color: #334155;
+      /* Ini adalah dark:bg-slate-700 */
+    }
+
+    /* Animasi untuk tombol */
+    @keyframes pulse {
+
+      0%,
+      100% {
+        opacity: 1;
+      }
+
+      50% {
+        opacity: 0.7;
+      }
+    }
+
+    .pulse {
+      animation: pulse 2s infinite;
+    }
+
+    /* Styling untuk file input */
+    .file-input-label {
+      transition: all 0.3s ease;
+    }
+
+    .file-input-label:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    /* Styling untuk statistik card */
+    .stat-card {
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .stat-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+    }
+
+    /* Tambahkan di bagian style di index.html */
+    .backup-btn {
+      transition: all 0.3s ease;
+    }
+
+    .backup-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    .backup-btn:active {
+      transform: translateY(0);
+    }
+
+    .backup-info-card {
+      transition: background-color 0.3s ease;
+    }
+
+    .backup-info-card:hover {
+      background-color: rgba(59, 130, 246, 0.05);
+    }
+
+    .dark .backup-info-card:hover {
+      background-color: rgba(59, 130, 246, 0.1);
+    }
+
+    /* Responsive improvements */
+    @media (max-width: 640px) {
+      .mobile-hidden {
+        display: none !important;
+      }
+
+      .mobile-full-width {
+        width: 100% !important;
+      }
+
+      .mobile-stack {
+        flex-direction: column !important;
+      }
+
+      .mobile-text-sm {
+        font-size: 0.875rem !important;
+      }
+
+      .mobile-p-3 {
+        padding: 0.75rem !important;
+      }
+
+      /* Floating Action Button for mobile */
+      .mobile-fab {
+        position: fixed;
+        bottom: 80px;
+        right: 20px;
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        background: #3b82f6;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        z-index: 1000;
+        font-size: 24px;
+      }
+
+      /* Bottom navigation for mobile */
+      .mobile-bottom-nav {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: white;
+        border-top: 1px solid #e2e8f0;
+        padding: 12px 0;
+        display: flex;
+        justify-content: space-around;
+        z-index: 1000;
+      }
+
+      .dark .mobile-bottom-nav {
+        background: #1e293b;
+        border-top: 1px solid #334155;
+      }
+
+      .mobile-nav-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        font-size: 0.75rem;
+        color: #64748b;
+      }
+
+      .mobile-nav-item.active {
+        color: #3b82f6;
+      }
+
+      /* Better touch targets */
+      button,
+      .drag-handle,
+      [data-action] {
+        min-height: 44px;
+        min-width: 44px;
+      }
+
+      /* Swipe actions */
+      .swipe-actions {
+        position: relative;
+        overflow: hidden;
+      }
+
+      .swipe-content {
+        transition: transform 0.3s ease;
+      }
+
+      .swipe-actions-buttons {
+        position: absolute;
+        right: 0;
+        top: 0;
+        bottom: 0;
+        display: flex;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+      }
+    }
+
+    /* Gesture support */
+    @media (hover: none) and (pointer: coarse) {
+      .drag-handle {
+        padding: 12px;
+      }
+
+      input,
+      select,
+      textarea {
+        font-size: 16px;
+        /* Prevent zoom on focus */
+      }
+    }
+  </style>
+</head>
+
+<body
+  class="bg-slate-100 dark:bg-slate-900 font-sans text-slate-800 dark:text-slate-200 transition-colors duration-300">
+  <div id="landing-page"
+    class="min-h-screen flex-col items-center justify-center text-center p-4 bg-slate-100 dark:bg-slate-900"
+    style="display: flex">
+    <div class="max-w-3xl">
+      <h1 class="text-4xl md:text-6xl font-bold text-slate-900 dark:text-white mb-4 animate-fade-in-down">
+        Activity Logger Pro
+      </h1>
+      <p class="text-lg md:text-xl text-slate-600 dark:text-slate-300 mb-8 animate-fade-in-up">
+        Catat, lacak, dan analisis semua kegiatan harian Anda dengan mudah
+        untuk meningkatkan produktivitas.
+      </p>
+      <button id="tombol-mulai"
+        class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg text-lg transition-transform transform hover:scale-105 shadow-lg">
+        Mulai Sekarang
+      </button>
+    </div>
+  </div>
+  <div id="custom-alert-overlay"
+    class="fixed inset-0 bg-slate-900 bg-opacity-50 flex items-center justify-center z-50 hidden p-4">
+    <div id="custom-alert-box"
+      class="custom-alert bg-white dark:bg-slate-800 w-full max-w-sm p-6 rounded-xl shadow-2xl text-center">
+      <h3 id="custom-alert-title" class="text-xl font-bold mb-4 text-slate-900 dark:text-white">
+        Notifikasi
+      </h3>
+      <p id="custom-alert-message" class="text-slate-600 dark:text-slate-300 mb-6">
+        Ini adalah pesan notifikasi.
+      </p>
+      <div id="custom-prompt-input-container" class="mb-4"></div>
+      <div id="custom-alert-buttons" class="flex gap-4 justify-center"></div>
+    </div>
+  </div>
+
+  <div id="login-overlay" class="fixed inset-0 bg-slate-900 bg-opacity-50 items-center justify-center z-40 p-4 hidden">
+    <div class="bg-white w-full max-w-sm p-6 sm:p-8 rounded-xl shadow-2xl text-center">
+      <h2 class="text-2xl font-bold mb-6 dark:text-blue-600">
+        Login atau Daftar
+      </h2>
+      <div class="space-y-4">
+        <input type="email" id="input-email" placeholder="Email" autocomplete="email"
+          class="w-full bg-slate-100 border border-slate-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+        <input type="password" id="input-password" placeholder="Password" autocomplete="current-password"
+          class="w-full bg-slate-100 border border-slate-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+        <div class="flex gap-4">
+          <button id="tombol-login"
+            class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition-colors">
+            Login
+          </button>
+          <button id="tombol-daftar"
+            class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg transition-colors">
+            Daftar
+          </button>
+        </div>
+        <div class="relative flex py-4 items-center">
+          <div class="flex-grow border-t border-slate-300"></div>
+          <span class="flex-shrink mx-4 text-slate-400">atau</span>
+          <div class="flex-grow border-t border-slate-300"></div>
+        </div>
+        <button id="tombol-login-google"
+          class="w-full bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 font-bold py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-2">
+          <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" class="w-5 h-5" />
+          <span>Login dengan Google</span>
+        </button>
+        <p id="auth-error" class="text-red-500 text-sm h-4"></p>
+      </div>
+    </div>
+  </div>
+
+  <div id="app-container" class="container mx-auto max-w-4xl p-4 md:p-8 hidden">
+    <header class="mb-8">
+      <div class="flex justify-between items-center gap-4">
+
+        <div class="w-1/5 flex justify-start">
+          <button id="tombol-logout"
+            class="bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-3 rounded-lg text-sm">Logout</button>
+        </div>
+
+        <div class="flex-1 text-center">
+          <h1 id="nama-user" class="text-2xl sm:text-3xl md:text-4xl font-bold text-slate-900 dark:text-white truncate">
+            Memuat...</h1>
+
+          <div class="flex items-center justify-center gap-4 mt-2">
+            <button id="tombol-hari-sebelumnya"
+              class="text-2xl hover:text-blue-600 transition-colors p-2 rounded-full">◄</button>
+            <p id="tanggal-hari-ini" class="text-slate-500 dark:text-slate-400 text-base sm:text-lg font-semibold"></p>
+            <button id="tombol-hari-berikutnya"
+              class="text-2xl hover:text-blue-600 transition-colors p-2 rounded-full">►</button>
+          </div>
+        </div>
+
+        <div class="w-1/5 flex justify-end">
+          <div class="flex items-center border border-slate-300 dark:border-slate-600 rounded-full">
+            <button id="tombol-edit-nama" title="Ubah Nama Tampilan"
+              class="text-xl text-slate-400 hover:text-blue-600 p-1 rounded-full transition-colors">✏️</button>
+            <button id="tombol-pengaturan" title="Buka Pengaturan"
+              class="text-xl text-slate-400 hover:text-blue-600 p-1 rounded-full transition-colors">⚙️</button>
+            <button id="dark-mode-toggle" title="Ubah Tema"
+              class="text-xl text-slate-400 hover:text-blue-600 p-1 rounded-full transition-colors">
+              <svg id="theme-toggle-dark-icon" class="hidden h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"></path>
+              </svg>
+              <svg id="theme-toggle-light-icon" class="hidden h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 100 2h1z"
+                  fill-rule="evenodd" clip-rule="evenodd"></path>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+
+
+    <div id="pengaturan-overlay"
+      class="fixed inset-0 bg-slate-900 bg-opacity-50 items-center justify-center z-50 p-4 hidden">
+      <div class="bg-white dark:bg-slate-800 w-full max-w-md p-6 rounded-xl shadow-2xl relative">
+        <button id="tombol-tutup-pengaturan" class="absolute top-4 right-4 text-2xl text-slate-500 hover:text-red-500">
+          &times;
+        </button>
+        <h3 class="text-xl font-bold mb-6 text-slate-900 dark:text-white">
+          Pengaturan Tampilan Timer
+        </h3>
+
+        <div class="space-y-5">
+          <div class="flex items-center justify-between">
+            <label for="pengaturan-tampil-timer" class="text-slate-700 dark:text-slate-300">Tampilkan Timer di
+              Aktivitas</label>
+            <input type="checkbox" id="pengaturan-tampil-timer"
+              class="h-6 w-6 rounded text-blue-600 focus:ring-blue-500" />
+          </div>
+
+          <div class="flex items-center justify-between">
+            <label class="text-slate-700 dark:text-slate-300">Ukuran Teks Timer</label>
+            <div class="flex items-center gap-2 rounded-lg bg-slate-100 dark:bg-slate-700 p-1">
+              <button data-ukuran="kecil" class="pengaturan-ukuran-tombol px-3 py-1 text-sm rounded-md">
+                Kecil
+              </button>
+              <button data-ukuran="normal" class="pengaturan-ukuran-tombol px-3 py-1 text-sm rounded-md">
+                Normal
+              </button>
+              <button data-ukuran="besar" class="pengaturan-ukuran-tombol px-3 py-1 text-sm rounded-md">
+                Besar
+              </button>
+            </div>
+          </div>
+
+          <div class="flex items-center justify-between">
+            <label for="pengaturan-warna-timer" class="text-slate-700 dark:text-slate-300">Warna Teks Timer</label>
+            <input type="color" id="pengaturan-warna-timer"
+              class="h-8 w-12 rounded border border-slate-300 dark:border-slate-600 cursor-pointer" />
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <main class="space-y-8">
+      <div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div class="space-y-4">
+            <h3 class="font-bold text-lg text-slate-900 dark:text-white">
+              Buat Proyek / Sub-Proyek
+            </h3>
+            <input type="text" id="input-proyek" placeholder="Nama Proyek Baru"
+              class="w-full bg-slate-100 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-900 dark:text-white" />
+            <select id="pilih-proyek-induk"
+              class="w-full bg-slate-100 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-900 dark:text-white">
+              <option value="none">
+                -- Jadikan Proyek Utama (Tanpa Induk) --
+              </option>
+            </select>
+            <button id="tombol-tambah-proyek"
+              class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition-colors">
+              Tambah Proyek
+            </button>
+          </div>
+          <div class="space-y-4">
+            <h3 class="font-bold text-lg text-slate-900 dark:text-white">
+              Tambah Kegiatan Baru
+            </h3>
+            <input type="text" id="input-kegiatan" placeholder="Nama kegiatan"
+              class="w-full bg-slate-100 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-900 dark:text-white" />
+            <div class="grid grid-cols-2 gap-4">
+              <input type="time" id="input-waktu"
+                class="bg-slate-100 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-900 dark:text-white" />
+              <select id="input-kategori"
+                class="bg-slate-100 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-900 dark:text-white">
+                <option>Pekerjaan</option>
+                <option>Belajar</option>
+                <option>Pribadi</option>
+                <option>Istirahat</option>
+                <option>Lainnya</option>
+              </select>
+            </div>
+            <select id="pilih-proyek-kegiatan"
+              class="w-full bg-slate-100 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-900 dark:text-white">
+              <option value="none">-- Tanpa Proyek --</option>
+            </select>
+            <button id="tombol-tambah"
+              class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg transition-colors">
+              Tambah Kegiatan
+            </button>
+          </div>
+        </div>
+      </div>
+      <!-- Tambahkan bagian Search & Filter -->
+      <div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm">
+        <h2 class="text-xl font-bold text-slate-900 dark:text-white mb-4">
+          🔍 Pencarian & Filter
+        </h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+          <input type="text" id="search-input" placeholder="Cari kegiatan atau proyek..."
+            class="w-full bg-slate-100 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-900 dark:text-white" />
+          <select id="filter-kategori"
+            class="w-full bg-slate-100 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-900 dark:text-white">
+            <option value="all">Semua Kategori</option>
+            <option value="Pekerjaan">Pekerjaan</option>
+            <option value="Belajar">Belajar</option>
+            <option value="Pribadi">Pribadi</option>
+            <option value="Istirahat">Istirahat</option>
+            <option value="Lainnya">Lainnya</option>
+          </select>
+          <select id="filter-status"
+            class="w-full bg-slate-100 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-900 dark:text-white">
+            <option value="all">Semua Status</option>
+            <option value="active">Aktif (Belum Selesai)</option>
+            <option value="completed">Selesai</option>
+            <option value="tracking">Sedang Tracking</option>
+            <option value="paused">Paused</option>
+          </select>
+        </div>
+        <div class="flex gap-2">
+          <button id="tombol-cari" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg">
+            Terapkan Filter
+          </button>
+          <button id="tombol-reset-filter"
+            class="bg-slate-400 hover:bg-slate-500 text-white font-bold py-2 px-4 rounded-lg">
+            Reset
+          </button>
+          <button id="tombol-pencarian-lanjutan"
+            class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg">
+            Pencarian Lanjutan
+          </button>
+        </div>
+      </div>
+      <div id="daftar-utama-container" class="space-y-4">
+        <h2 class="text-2xl font-bold text-slate-900 dark:text-white">
+          Daftar Proyek & Kegiatan
+        </h2>
+        <div id="loading" class="text-center py-8">
+          <p class="text-slate-500 dark:text-slate-400">
+            Menyambungkan ke database...
+          </p>
+        </div>
+        <div id="pesan-kosong" class="hidden text-center py-8 bg-white dark:bg-slate-800 rounded-xl shadow-sm">
+          <p class="text-slate-500 dark:text-slate-400">
+            Tidak ada proyek atau kegiatan untuk ditampilkan.
+          </p>
+        </div>
+        <div id="daftar-proyek-container" class="space-y-3"></div>
+        <ul id="daftar-kegiatan-lain" class="space-y-3"></ul>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <!-- Ganti bagian Ringkasan Hari Ini dengan ini: -->
+        <div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm md:col-span-1">
+          <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-bold text-slate-900 dark:text-white">
+              📊 Analisis Produktivitas
+            </h2>
+            <select id="statistik-period"
+              class="bg-slate-100 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-1 text-sm">
+              <option value="today">Hari Ini</option>
+              <option value="week">Minggu Ini</option>
+              <option value="month">Bulan Ini</option>
+              <option value="all">Semua Waktu</option>
+            </select>
+          </div>
+
+          <div class="relative h-64 w-full mb-4">
+            <canvas id="statistik-chart"></canvas>
+          </div>
+
+          <div id="konten-statistik-teks" class="text-slate-600 dark:text-slate-300 space-y-2">
+            <div class="flex justify-between">
+              <span>Total Waktu Produktif:</span>
+              <strong id="total-waktu">0j 0m</strong>
+            </div>
+            <div class="flex justify-between">
+              <span>Rata-rata per Hari:</span>
+              <strong id="rata-waktu">0j 0m</strong>
+            </div>
+            <div class="flex justify-between">
+              <span>Produktivitas Tertinggi:</span>
+              <strong id="peak-time">-</strong>
+            </div>
+            <div class="flex justify-between">
+              <span>Tren:</span>
+              <strong id="trend-indicator" class="text-green-600">Stabil</strong>
+            </div>
+          </div>
+
+          <div class="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
+            <button id="tombol-detail-statistik"
+              class="w-full bg-slate-600 hover:bg-slate-700 text-white font-bold py-2 px-4 rounded-lg text-sm">
+              📈 Lihat Detail Analisis
+            </button>
+          </div>
+        </div>
+
+        <div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm md:col-span-1">
+          <h2 class="text-xl font-bold text-slate-900 dark:text-white mb-4">
+            Utilitas Teks
+          </h2>
+          <div class="flex flex-wrap gap-2">
+            <button id="tombol-generate-teks"
+              class="bg-slate-600 hover:bg-slate-700 text-white font-bold py-2 px-4 rounded-lg">
+              Jadikan Teks
+            </button>
+            <button id="tombol-salin-teks"
+              class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg">
+              Salin Teks
+            </button>
+          </div>
+          <textarea id="hasil-teks" rows="8" placeholder="Hasil teks akan muncul di sini..."
+            class="mt-4 w-full bg-slate-100 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg p-3 text-slate-900 dark:text-white"></textarea>
+
+        </div>
+      </div>
+
+      <div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm">
+        <h2 class="text-xl font-bold text-slate-900 dark:text-white mb-4">
+          📁 Ekspor & Import Data
+        </h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+          <button id="tombol-export-json"
+            class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center gap-2">
+            📥 Ekspor JSON
+          </button>
+          <button id="tombol-export-csv"
+            class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center gap-2">
+            📊 Ekspor CSV
+          </button>
+          <button id="tombol-import-data"
+            class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center gap-2">
+            📤 Import Data
+          </button>
+        </div>
+        <div class="text-sm text-slate-500 dark:text-slate-400">
+          <p>• Ekspor: Data akan didownload dalam format JSON atau CSV</p>
+          <p>• Import: Upload file backup sebelumnya</p>
+        </div>
+        <input type="file" id="file-import" class="hidden" accept=".json,.csv">
+      </div>
+
+      <!-- Backup & Restore Section -->
+      <div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm">
+        <h2 class="text-xl font-bold text-slate-900 dark:text-white mb-6">
+          💾 Backup & Restore
+        </h2>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <!-- Backup Options -->
+          <div class="space-y-4">
+            <h3 class="font-bold text-lg text-slate-700 dark:text-slate-300 mb-3">
+              Buat Backup
+            </h3>
+
+            <div class="space-y-3">
+              <button id="tombol-backup-semua"
+                class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center gap-2 transition-colors">
+                📦 Backup Semua Data
+              </button>
+
+              <button id="tombol-backup-harian"
+                class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center gap-2 transition-colors">
+                📅 Backup Hari Ini
+              </button>
+
+              <button id="tombol-backup-proyek"
+                class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center gap-2 transition-colors">
+                📁 Backup per Proyek
+              </button>
+            </div>
+
+            <div class="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+              <p class="text-sm text-slate-600 dark:text-slate-400">
+                <strong>💡 Tips:</strong> Backup data secara berkala untuk mencegah kehilangan data.
+              </p>
+            </div>
+          </div>
+
+          <!-- Restore Options -->
+          <div class="space-y-4">
+            <h3 class="font-bold text-lg text-slate-700 dark:text-slate-300 mb-3">
+              Restore Data
+            </h3>
+
+            <div class="space-y-3">
+              <div class="relative">
+                <input type="file" id="file-import-backup" class="hidden" accept=".json" multiple>
+                <label for="file-import-backup"
+                  class="block w-full bg-orange-600 hover:bg-orange-700 text-white font-bold py-3 px-4 rounded-lg text-center cursor-pointer flex items-center justify-center gap-2 transition-colors">
+                  📤 Pilih File Backup
+                </label>
+              </div>
+
+              <button id="tombol-lihat-backup"
+                class="w-full bg-slate-600 hover:bg-slate-700 text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center gap-2 transition-colors">
+                📋 Lihat Backup Tersimpan
+              </button>
+
+              <button id="tombol-hapus-backup"
+                class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center gap-2 transition-colors">
+                🗑️ Hapus Backup Lama
+              </button>
+            </div>
+
+            <div class="mt-4 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
+              <p class="text-sm text-slate-600 dark:text-slate-400">
+                <strong>⚠️ Perhatian:</strong> Import akan menambah data baru, tidak menghapus data yang ada.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Backup Info -->
+        <div class="mt-6 pt-6 border-t border-slate-200 dark:border-slate-700">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="bg-slate-50 dark:bg-slate-700/50 p-3 rounded-lg">
+              <div class="text-sm text-slate-500 dark:text-slate-400">Backup Terakhir</div>
+              <div id="last-backup-time" class="font-bold text-lg">Belum ada</div>
+            </div>
+
+            <div class="bg-slate-50 dark:bg-slate-700/50 p-3 rounded-lg">
+              <div class="text-sm text-slate-500 dark:text-slate-400">Total Backup</div>
+              <div id="total-backups" class="font-bold text-lg">0 file</div>
+            </div>
+
+            <div class="bg-slate-50 dark:bg-slate-700/50 p-3 rounded-lg">
+              <div class="text-sm text-slate-500 dark:text-slate-400">Ukuran Data</div>
+              <div id="data-size" class="font-bold text-lg">0 KB</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Tambahkan FAB untuk mobile di sebelum </body>: -->
+  <div id="mobile-fab" class="mobile-fab hidden">
+    +
+  </div>
+
+  <!-- Tambahkan bottom navigation untuk mobile: -->
+  <div id="mobile-bottom-nav" class="mobile-bottom-nav hidden">
+    <div class="mobile-nav-item active" data-section="activities">
+      📝<span>Aktivitas</span>
+    </div>
+    <div class="mobile-nav-item" data-section="projects">
+      📁<span>Proyek</span>
+    </div>
+    <div class="mobile-nav-item" data-section="analytics">
+      📊<span>Statistik</span>
+    </div>
+    <div class="mobile-nav-item" data-section="settings">
+      ⚙️<span>Pengaturan</span>
+    </div>
+  </div>
+  <script type="module" src="script.js"></script>
+</body>
+
+</html>

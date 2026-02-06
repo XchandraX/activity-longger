@@ -1,0 +1,49 @@
+{
+  "name": "Activity Logger Pro",
+  "short_name": "ActivityLog",
+  "description": "Aplikasi untuk mencatat semua kegiatan harian Anda dengan mudah.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#3b82f6",
+  "orientation": "any", 
+  "scope": "/",
+  "icons": [
+    {
+      "src": "images/icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "images/icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["productivity", "utilities"],
+  "screenshots": [
+    {
+      "src": "images/screenshot1.png",
+      "type": "image/png",
+      "sizes": "1280x720"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Tambah Kegiatan Baru",
+      "short_name": "Tambah",
+      "description": "Tambah kegiatan baru dengan cepat",
+      "url": "/?action=add",
+      "icons": [{ "src": "images/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Lihat Statistik",
+      "short_name": "Statistik",
+      "description": "Lihat ringkasan produktivitas",
+      "url": "/?action=stats",
+      "icons": [{ "src": "images/icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}
